@@ -15,3 +15,4 @@
 
 **Completion to date:** ≈ 60 %  
 **Next Target:** Day 3 – Analytics Dashboard (Clicks + Leads Visualization)
+- 2025-10-21 05:59  Removed pre-commit hooks (speed mode)
