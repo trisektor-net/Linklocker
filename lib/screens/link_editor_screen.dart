@@ -40,7 +40,8 @@ class _LinkEditorScreenState extends State<LinkEditorScreen> {
   }
 
   Future<void> _ensureProfile(String uid, String? email) async {
-    final prof = await _sb.from('profiles').select('username').eq('id', uid).maybeSingle();
+    final prof =
+        await _sb.from('profiles').select('username').eq('id', uid).maybeSingle();
     if (prof != null) {
       setState(() => _username = prof['username'] as String?);
       return;
@@ -122,23 +123,22 @@ class _LinkEditorScreenState extends State<LinkEditorScreen> {
               controller: titleCtl,
               decoration: const InputDecoration(labelText: 'Title'),
               maxLength: 60,
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'Title required'
-                  : null,
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? 'Title required' : null,
             ),
             const SizedBox(height: 8),
             TextFormField(
               controller: urlCtl,
-              decoration:
-                  const InputDecoration(labelText: 'URL (https://example.com)'),
+              decoration: const InputDecoration(
+                  labelText: 'URL (https://example.com)'),
               validator: (v) =>
                   (v == null || !_isValidUrl(v)) ? 'Enter valid URL' : null,
             ),
             const SizedBox(height: 8),
             TextFormField(
               controller: iconCtl,
-              decoration:
-                  const InputDecoration(labelText: 'Icon (emoji or short name)'),
+              decoration: const InputDecoration(
+                  labelText: 'Icon (emoji or short name)'),
               maxLength: 6,
             ),
             const SizedBox(height: 8),
@@ -184,13 +184,21 @@ class _LinkEditorScreenState extends State<LinkEditorScreen> {
     setState(() => _busy = true);
     try {
       if (existing == null) {
-        final temp = {...newItem, 'id': 'temp_${DateTime.now().microsecondsSinceEpoch}', 'position': _links.length};
-        setState(() => _links.add(temp));
-        final inserted = await _sb.from('links').insert({
-          'user_id': uid,
+        final temp = {
           ...newItem,
-          'position': _links.length - 1,
-        }).select('id').single();
+          'id': 'temp_${DateTime.now().microsecondsSinceEpoch}',
+          'position': _links.length
+        };
+        setState(() => _links.add(temp));
+        final inserted = await _sb
+            .from('links')
+            .insert({
+              'user_id': uid,
+              ...newItem,
+              'position': _links.length - 1,
+            })
+            .select('id')
+            .single();
         final idx = _links.indexWhere((e) => e['id'] == temp['id']);
         if (idx != -1) _links[idx]['id'] = inserted['id'];
         _snack('Link added');
@@ -305,11 +313,15 @@ class _LinkEditorScreenState extends State<LinkEditorScreen> {
         title: Text(uname.isEmpty ? 'Your Links' : 'Your Links – @$uname'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.analytics_outlined),
+            tooltip: 'Analytics',
+            onPressed: () => Navigator.pushNamed(context, '/analytics'),
+          ),
+          IconButton(
             tooltip: 'Public page',
             icon: const Icon(Icons.public),
-            onPressed: _username == null
-                ? null
-                : () => _snack('Public page: /$uname'),
+            onPressed:
+                _username == null ? null : () => _snack('Public page: /$uname'),
           ),
           IconButton(
               tooltip: 'Sign out',

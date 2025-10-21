@@ -1,59 +1,80 @@
-// lib/main.dart
 // =============================================================================
-// LinkLocker – Main Entry
-// dotenv initialized before Supabase (works on Web, iOS, Android, macOS)
+// LinkLocker – main.dart (Final Zero-Error Version)
 // =============================================================================
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:go_router/go_router.dart';
+
 import 'screens/auth_screen.dart';
 import 'screens/link_editor_screen.dart';
 import 'screens/public_profile_screen.dart';
+import 'screens/analytics_screen.dart';
+import 'widgets/cookie_consent.dart';
+import 'services/monitoring.dart';
 
 Future<void> main() async {
-  // 1️⃣ Required for async initialization before runApp()
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 2️⃣ Load environment variables from assets/.env
-  try {
-    await dotenv.load(fileName: 'assets/.env');
-    debugPrint('✅ .env successfully loaded from assets.');
-  } catch (e) {
-    debugPrint('⚠️ Failed to load .env, using fallback values. Error: $e');
-  }
+  // Load environment variables
+  await dotenv.load(fileName: 'assets/.env');
 
-  // 3️⃣ Safe fallback values (used if .env is missing or fails to load)
-  const fallbackUrl = 'https://nsdlwuarzvkprhlvmnmz.supabase.co';
-  const fallbackAnonKey =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zZGx3dWFyenZrcHJobHZtbm16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3NjQwNjYsImV4cCI6MjA3NjM0MDA2Nn0.VjaQfQN1ttuiOv7UnWzpqZ4BJpuJUeWZFGe3wYIMXjY';
-
-  // 4️⃣ Read from dotenv if available, else fallback
-  final supabaseUrl = dotenv.maybeGet('SUPABASE_URL') ?? fallbackUrl;
-  final supabaseAnonKey =
-      dotenv.maybeGet('SUPABASE_ANON_KEY') ?? fallbackAnonKey;
-
-  // 5️⃣ Initialize Supabase AFTER dotenv values are known
+  // Initialize Supabase
   await Supabase.initialize(
-    url: supabaseUrl,
-    anonKey: supabaseAnonKey,
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
-  // 6️⃣ Finally, launch the app
-  runApp(const MyApp());
+  // Initialize optional monitoring (Sentry, etc.)
+  await initMonitoring();
+
+  runApp(const LinkLockerApp());
 }
 
-// -----------------------------------------------------------------------------
-// Root widget
-// -----------------------------------------------------------------------------
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class LinkLockerApp extends StatelessWidget {
+  const LinkLockerApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    final router = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) => const AuthScreen(),
+        ),
+        GoRoute(
+          path: '/editor',
+          builder: (context, state) => const LinkEditorScreen(),
+        ),
+        GoRoute(
+          path: '/u/:username',
+          builder: (context, state) {
+            final username = state.pathParameters['username']!;
+            return PublicProfileScreen(username: username);
+          },
+        ),
+        GoRoute(
+          path: '/analytics',
+          builder: (context, state) => const AnalyticsScreen(),
+        ),
+      ],
+    );
+
+    return MaterialApp.router(
       title: 'LinkLocker',
-      home: AuthScreen(), // starting screen
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+      ),
+      debugShowCheckedModeBanner: false,
+      routerConfig: router,
+      builder: (context, child) => Stack(
+        children: [
+          Positioned.fill(child: child ?? const SizedBox.shrink()),
+          const CookieConsentBanner(),
+        ],
+      ),
     );
   }
 }
