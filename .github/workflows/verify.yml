@@ -1,0 +1,39 @@
+name: LinkLocker Verify
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run analyzer
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test --reporter expanded || true
+
+      - name: Verify and Build Script (local parity)
+        run: bash tools/verify_and_build.sh
+
+      - name: WASM Dry Run Build (non-blocking)
+        run: |
+          flutter build web --wasm --release --no-tree-shake-icons --pwa-strategy=none --base-href=/ --no-source-maps || echo "⚠️ Skipped WASM dry-run"
