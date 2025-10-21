@@ -22,17 +22,32 @@ jobs:
       - name: Flutter version
         run: flutter --version
 
+      - name: Cache pub
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            .dart_tool
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
       - name: Install dependencies
         run: flutter pub get
 
       - name: Run analyzer
         run: flutter analyze
 
-      - name: Run tests
+      - name: Run tests (non-blocking)
         run: flutter test --reporter expanded || true
 
-      - name: Verify and Build Script (local parity)
+      - name: Verify & build (project parity)
         run: bash tools/verify_and_build.sh
+
+      - name: Supabase schema check (optional)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: bash tools/ci_supabase_check.sh
 
       - name: WASM Dry Run Build (non-blocking)
         run: |
